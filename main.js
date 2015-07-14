@@ -68,11 +68,12 @@ Parse.Cloud.define("getActiveEntries", function(request, response) {
     var weeklyOutcomeQuery = new Parse.Query("Outcome");
     weeklyOutcomeQuery.equalTo("typeName", "Weekly");
 
-    var startOfWeek = moment().startOf("week").startOf("day").toDate();
+    var startOfWeek = moment().day(1).startOf("day").toDate();
+    var endOfWeek = moment().day(7).endOf("day").toDate();
+
     console.log("Start Of The Week: " + startOfWeek);
     weeklyOutcomeQuery.greaterThanOrEqualTo("createdAt", startOfWeek);
 
-    var endOfWeek = moment().endOf("week").endOf("day").toDate();
     console.log("End Of The Week: " + endOfWeek);
     weeklyOutcomeQuery.lessThan("createdAt", endOfWeek);
 
