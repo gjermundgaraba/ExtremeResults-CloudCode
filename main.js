@@ -3,7 +3,7 @@ var moment = require('moment');
 /*
  * Function to get all Agile Results type entries (Daily Outcomes, Monday Visions, Weekly Reflections, etc...)
  *
- * Returns an array sorted by created date
+ * Returns an array sorted by effectiveDate
  */
 Parse.Cloud.define("getEntries", function(request, response) {
     var entries = [];
@@ -26,8 +26,8 @@ Parse.Cloud.define("getEntries", function(request, response) {
         });
 
     function entriesSortFunction(a, b) {
-        var dateA = new Date(a.createdAt);
-        var dateB = new Date(b.createdAt);
+        var dateA = new Date(a.effectiveDate);
+        var dateB = new Date(b.effectiveDate);
 
         if (dateA > dateB) {
             return -1;
@@ -54,41 +54,28 @@ Parse.Cloud.define("getActiveEntries", function(request, response) {
     var dailyOutcomeQuery = new Parse.Query("Outcome");
     dailyOutcomeQuery.equalTo("typeName", "Daily");
 
-
     var startDateForDaily = moment().startOf("day").toDate();
     console.log("Start Date For Daily: " + startDateForDaily);
-    dailyOutcomeQuery.greaterThanOrEqualTo("createdAt", startDateForDaily);
+    dailyOutcomeQuery.greaterThanOrEqualTo("effectiveDate", startDateForDaily);
 
     var finishDateForDaily = moment().endOf("day").toDate();
     console.log("Finish Date For Daily: " + finishDateForDaily);
-    dailyOutcomeQuery.lessThan("createdAt", finishDateForDaily);
+    dailyOutcomeQuery.lessThan("effectiveDate", finishDateForDaily);
 
 
     // Weekly
-    var weeklyOutcomeQuery = new Parse.Query("Outcome");
-    weeklyOutcomeQuery.equalTo("typeName", "Weekly");
-
-    var startOfWeek = moment().day(1).startOf("day").toDate();
-    var endOfWeek = moment().day(7).endOf("day").toDate();
-
-    console.log("Start Of The Week: " + startOfWeek);
-    weeklyOutcomeQuery.greaterThanOrEqualTo("createdAt", startOfWeek);
-
-    console.log("End Of The Week: " + endOfWeek);
-    weeklyOutcomeQuery.lessThan("createdAt", endOfWeek);
+    var weeklyOutcomeQuery = getWeeklyOutcomeQuery();
 
     dailyOutcomeQuery.first()
         .then(function (dailyOutcome) {
-            console.log("Result for Daily Outcome: " + dailyOutcome);
-            if (dailyOutcome !== undefined) {
+            if (typeof dailyOutcome !== "undefined") {
                 entries.push(dailyOutcome);
             }
 
             return weeklyOutcomeQuery.first();
         })
         .then(function (weeklyOutcome) {
-            console.log("Result for Weekly Outcome: " + weeklyOutcome);
-            if (weeklyOutcome !== undefined) {
+            if (typeof weeklyOutcome !== "undefined") {
                 entries.push(weeklyOutcome);
             }
 
@@ -99,3 +86,161 @@ Parse.Cloud.define("getActiveEntries", function(request, response) {
 
 });
 
+/*
+ * Function to get all related entries for an outcome
+ *
+ * Monday Vision:
+ * Last Friday Reflection (if there is any).
+ *
+ * Daily Outcome:
+ * Monday Vision (if there is any)
+ *
+ *
+ * Input:
+ * typeName: outcome typeName (eg. Daily, Weekly)
+ * outcomeDate: optional,
+ */
+Parse.Cloud.define("getRelatedEntriesForOutcome", function(request, response) {
+    var entries = [];
+
+    var typeName = request.params.typeName;
+    var momentDate = (typeof request.params.outcomeDate === "undefined") ? moment() : moment(request.params.outcomeDate);
+
+    if (typeName === "Daily") {
+        var weeklyOutcomeQuery = getWeeklyOutcomeQuery(momentDate);
+
+        weeklyOutcomeQuery.first()
+            .then(function (weeklyOutcome) {
+                if (typeof weeklyOutcome !== "undefined") {
+                    entries.push(weeklyOutcome);
+                }
+
+                var lastDailyOutcomeQuery = getDailyOutcomeQuery(momentDate.clone().subtract("days", 1));
+                return lastDailyOutcomeQuery.first();
+            })
+            .then(function (lastDailyOutcome) {
+                if (typeof lastDailyOutcome !== "undefined") {
+                    entries.push(lastDailyOutcome);
+                }
+
+                response.success(entries);
+            }, function (error) {
+                response.error(error);
+            });
+
+    } else if (typeName === "Weekly") {
+        var reflectionsQuery = getWeeklyReflectionQuery(momentDate.clone().subtract("days", 7));
+        reflectionsQuery.first()
+            .then(function (weeklyReflection) {
+                if (typeof weeklyReflection !== "undefined") {
+                    entries.push(weeklyReflection);
+                }
+
+                var lastWeeksWeeklyOutcomeQuery = getWeeklyOutcomeQuery(momentDate.clone().subtract("days", 7));
+                return lastWeeksWeeklyOutcomeQuery.first();
+            })
+            .then(function (lastWeeksWeeklyOutcome) {
+                if (typeof lastWeeksWeeklyOutcome !== "undefined") {
+                    entries.push(lastWeeksWeeklyOutcome);
+                }
+
+
+                response.success(entries);
+            }, function (error) {
+                response.error(error);
+            });
+    } else {
+        response.error("Invalid typeName");
+    }
+});
+
+/*
+ * Function to get all related entries for a reflection
+ *
+ * Weekly Reflection:
+ * This weeks Monday Vision
+ * Last Friday Reflection (if there is any).
+ *
+ *
+ * Input:
+ * typeName: outcome typeName (eg. Weekly)
+ * outcomeDate: optional,
+ */
+Parse.Cloud.define("getRelatedEntriesForReflection", function(request, response) {
+    var entries = [];
+
+    var typeName = request.params.typeName;
+    var momentDate = (typeof request.params.outcomeDate === "undefined") ? moment() : moment(request.params.outcomeDate);
+
+    if (typeName === "Weekly") {
+        var weeklyOutcomeQuery = getWeeklyOutcomeQuery(momentDate);
+
+        weeklyOutcomeQuery.first()
+            .then(function (weeklyOutcome) {
+                if (typeof weeklyOutcome !== "undefined") {
+                    entries.push(weeklyOutcome);
+                }
+
+                var reflectionsQuery = getWeeklyReflectionQuery(momentDate.clone().subtract("days", 7));
+                return reflectionsQuery.first();
+            })
+            .then(function (lastWeeklyReflection) {
+                if (typeof lastWeeklyReflection !== "undefined") {
+                    entries.push(lastWeeklyReflection);
+                }
+
+                response.success(entries);
+            }, function (error) {
+                response.error(error);
+            });
+    } else {
+        response.error("Invalid typeName");
+    }
+});
+
+function getDailyOutcomeQuery(optionalMomentDate) {
+    var momentDate = (typeof optionalMomentDate === "undefined") ? moment() : optionalMomentDate;
+
+    var dailyQuery = new Parse.Query("Outcome");
+    dailyQuery.equalTo("typeName", "Daily");
+
+    var startOfDay = momentDate.clone().startOf("day").toDate();
+    dailyQuery.greaterThanOrEqualTo("effectiveDate", startOfDay);
+
+    var endOfDay = momentDate.clone().endOf("day").toDate();
+    dailyQuery.lessThan("effectiveDate", endOfDay);
+
+    return dailyQuery;
+}
+
+function getWeeklyReflectionQuery(optionalMomentDate) {
+    return getWeeklyQuery("Reflection", optionalMomentDate);
+}
+
+function getWeeklyOutcomeQuery(optionalMomentDate) {
+    return getWeeklyQuery("Outcome", optionalMomentDate);
+}
+
+function getWeeklyQuery(className, optionalMomentDate) {
+    var momentDate = (typeof optionalMomentDate === "undefined") ? moment() : optionalMomentDate;
+
+    var weeklyQuery = new Parse.Query(className);
+    weeklyQuery.equalTo("typeName", "Weekly");
+
+    var startOfWeek = getStartOfWeekAsMoment(momentDate).toDate();
+    weeklyQuery.greaterThanOrEqualTo("effectiveDate", startOfWeek);
+
+    var endOfWeek = getEndOfWeekAsMoment(momentDate).toDate();
+    weeklyQuery.lessThan("effectiveDate", endOfWeek);
+
+
+    return weeklyQuery;
+}
+
+function getStartOfWeekAsMoment(momentDate) {
+    return momentDate.clone().day(1).startOf("day");
+}
+
+function getEndOfWeekAsMoment(momentDate) {
+    return momentDate.clone().day(7).endOf("day");
+}
