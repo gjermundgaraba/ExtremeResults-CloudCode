@@ -1,4 +1,4 @@
-var moment = require('moment');
+var moment = require('cloud/moment');
 
 /*
  * Function to get all Agile Results type entries (Daily Outcomes, Monday Visions, Weekly Reflections, etc...)
@@ -55,11 +55,9 @@ Parse.Cloud.define("getActiveEntries", function(request, response) {
     dailyOutcomeQuery.equalTo("typeName", "Daily");
 
     var startDateForDaily = moment().startOf("day").toDate();
-    console.log("Start Date For Daily: " + startDateForDaily);
     dailyOutcomeQuery.greaterThanOrEqualTo("effectiveDate", startDateForDaily);
 
     var finishDateForDaily = moment().endOf("day").toDate();
-    console.log("Finish Date For Daily: " + finishDateForDaily);
     dailyOutcomeQuery.lessThan("effectiveDate", finishDateForDaily);
 
 
@@ -238,9 +236,9 @@ function getWeeklyQuery(className, optionalMomentDate) {
 }
 
 function getStartOfWeekAsMoment(momentDate) {
-    return momentDate.clone().day(1).startOf("day");
+    return momentDate.clone().startOf("isoWeek");
 }
 
 function getEndOfWeekAsMoment(momentDate) {
-    return momentDate.clone().day(7).endOf("day");
+    return momentDate.clone().endOf("isoWeek");
 }
