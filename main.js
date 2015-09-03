@@ -1,4 +1,46 @@
+/* Cloud Code for Xtreme Results Apps */
+
 var moment = require('cloud/moment');
+
+
+/*
+ * WARNING!!! THIS SHOULD NOT BE IN PRODUCTION
+ * Clear the database. Used ONLY for e2e tests. Should NEVER be deployed to production environment.
+ */
+Parse.Cloud.define("clearDB", function(request, response) {
+    var entries = [];
+
+    var outcomesQuery = new Parse.Query("Outcome");
+    var reflectionsQuery = new Parse.Query("Reflection");
+
+    var promises = [];
+    promises.push(deleteOutcomes());
+    promises.push(deleteReflections());
+
+    Parse.Promise
+        .when(promises)
+        .then(function () {
+            response.success(entries);
+        }, function (error) {
+            response.error(error);
+        });
+
+    function deleteOutcomes() {
+        return outcomesQuery.find()
+            .then(function(outcomes) {
+                return Parse.Object.destroyAll(outcomes);
+            });
+    }
+
+    function deleteReflections() {
+        return reflectionsQuery.find()
+            .then(function(reflections) {
+                return Parse.Object.destroyAll(reflections);
+            });
+    }
+
+});
+
 
 /*
  * Function to get all Agile Results type entries (Daily Outcomes, Monday Visions, Weekly Reflections, etc...)
