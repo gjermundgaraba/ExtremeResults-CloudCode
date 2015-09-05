@@ -68,8 +68,8 @@ Parse.Cloud.define("getEntries", function(request, response) {
         });
 
     function entriesSortFunction(a, b) {
-        var dateA = new Date(a.effectiveDate);
-        var dateB = new Date(b.effectiveDate);
+        var dateA = new Date(a.get("effectiveDate"));
+        var dateB = new Date(b.get("effectiveDate"));
 
         if (dateA > dateB) {
             return -1;
@@ -155,7 +155,7 @@ Parse.Cloud.define("getRelatedEntriesForOutcome", function(request, response) {
                     entries.push(weeklyOutcome);
                 }
 
-                var lastDailyOutcomeQuery = getDailyOutcomeQuery(momentDate.clone().subtract("days", 1));
+                var lastDailyOutcomeQuery = getDailyOutcomeQuery(momentDate.clone().subtract(1, "days"));
                 return lastDailyOutcomeQuery.first();
             })
             .then(function (lastDailyOutcome) {
@@ -169,14 +169,14 @@ Parse.Cloud.define("getRelatedEntriesForOutcome", function(request, response) {
             });
 
     } else if (typeName === "Weekly") {
-        var reflectionsQuery = getWeeklyReflectionQuery(momentDate.clone().subtract("days", 7));
+        var reflectionsQuery = getWeeklyReflectionQuery(momentDate.clone().subtract(7, "days"));
         reflectionsQuery.first()
             .then(function (weeklyReflection) {
                 if (typeof weeklyReflection !== "undefined") {
                     entries.push(weeklyReflection);
                 }
 
-                var lastWeeksWeeklyOutcomeQuery = getWeeklyOutcomeQuery(momentDate.clone().subtract("days", 7));
+                var lastWeeksWeeklyOutcomeQuery = getWeeklyOutcomeQuery(momentDate.clone().subtract(7, "days"));
                 return lastWeeksWeeklyOutcomeQuery.first();
             })
             .then(function (lastWeeksWeeklyOutcome) {
@@ -221,7 +221,7 @@ Parse.Cloud.define("getRelatedEntriesForReflection", function(request, response)
                     entries.push(weeklyOutcome);
                 }
 
-                var reflectionsQuery = getWeeklyReflectionQuery(momentDate.clone().subtract("days", 7));
+                var reflectionsQuery = getWeeklyReflectionQuery(momentDate.clone().subtract(7, "days"));
                 return reflectionsQuery.first();
             })
             .then(function (lastWeeklyReflection) {
