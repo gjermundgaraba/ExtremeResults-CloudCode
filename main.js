@@ -8,6 +8,7 @@ var moment = require('cloud/moment');
  * Clear the database. Used ONLY for e2e tests. Should NEVER be deployed to production environment.
  */
 Parse.Cloud.define("clearDB", function(request, response) {
+    Parse.Cloud.useMasterKey();
     var entries = [];
 
     var outcomesQuery = new Parse.Query("Outcome");
