@@ -42,6 +42,105 @@ Parse.Cloud.define("clearDB", function(request, response) {
 
 });
 
+Parse.Cloud.afterSave(Parse.User, function(request) {
+    Parse.Cloud.useMasterKey();
+    var HotSpotBucket = Parse.Object.extend("HotSpotBucket");
+
+    var mindBucket = new HotSpotBucket();
+    mindBucket.set('name', 'Mind');
+    mindBucket.set('hotSpots', [
+        'Anxiety',
+        'Clarity',
+        'Creativity',
+        'Critical Thinking',
+        'Learning',
+        'Metnal Models',
+        'Optimism',
+        'Vision'
+    ]);
+    mindBucket.setACL(new Parse.ACL(request.object))
+
+    var bodyBucket = new HotSpotBucket();
+    bodyBucket.set('name', 'Body');
+    bodyBucket.set('hotSpots', [
+        'Dental',
+        'Exercise',
+        'Health/ Medical',
+        'Senses',
+        'Sleeping',
+        'Stress',
+        'Systems'
+    ]);
+
+    var careerBucket = new HotSpotBucket();
+    careerBucket.set('name', 'Career');
+    careerBucket.set('hotSpots', [
+        'Activities',
+        'Deliverables',
+        'Development',
+        'Expectations',
+        'Outcomes',
+        'Projects',
+        'Relationships',
+        'Roles',
+        'Tasks'
+    ]);
+
+    var emotionsBucket = new HotSpotBucket();
+    emotionsBucket.set('name', 'Emotions');
+    emotionsBucket.set('hotSpots', [
+        'Emotional Intelligence',
+        'Feeling Good',
+        'Emotions',
+        'Empathy',
+        'Passion'
+    ]);
+
+    var financialBucket = new HotSpotBucket();
+    financialBucket.set('name', 'Financial');
+    financialBucket.set('hotSpots', [
+        'Active Income',
+        'Budget',
+        'Business',
+        'Credit',
+        'Insurance',
+        'Investment',
+        'Nest Egg',
+        'Passive Income',
+        'Retirement',
+        'Real Estate',
+        'Savings',
+        'Spending',
+        'Taxes'
+    ]);
+
+    var funBucket = new HotSpotBucket();
+    funBucket.set('name', 'Fun');
+    funBucket.set('hotSpots', [
+        'Free-time',
+        'Hobbies / Interests',
+        'Indoor recreation',
+        'Outdoor recreation',
+        'Travel',
+        'Vacations'
+    ]);
+
+    var relationshipsBucket = new HotSpotBucket();
+    relationshipsBucket.set('name', 'Relationships');
+    relationshipsBucket.set('hotSpots', [
+        'Family',
+        'Work',
+        'Other'
+    ]);
+
+    mindBucket.save();
+    bodyBucket.save();
+    careerBucket.save();
+    emotionsBucket.save();
+    financialBucket.save();
+    funBucket.save();
+    relationshipsBucket.save();
+});
 
 /*
  * Function to get all Agile Results type entries (Daily Outcomes, Monday Visions, Weekly Reflections, etc...)
@@ -58,7 +157,8 @@ Parse.Cloud.define("getEntries", function(request, response) {
         .then(function(outcomes) {
             entries.push.apply(entries, outcomes);
 
-            return reflectionsQuery.find();        })
+            return reflectionsQuery.find();
+        })
         .then(function(reflections) {
             entries.push.apply(entries, reflections);
 
