@@ -2,7 +2,6 @@
 
 var moment = require('cloud/moment');
 
-
 /*
  * WARNING!!! THIS SHOULD NOT BE IN PRODUCTION
  * Clear the database. Used ONLY for e2e tests. Should NEVER be deployed to production environment.
@@ -13,10 +12,12 @@ Parse.Cloud.define("clearDB", function(request, response) {
 
     var outcomesQuery = new Parse.Query("Outcome");
     var reflectionsQuery = new Parse.Query("Reflection");
+    var hotSpotBucketsQuery = new Parse.Query("HotSpotBucket");
 
     var promises = [];
     promises.push(deleteOutcomes());
     promises.push(deleteReflections());
+    promises.push(deleteHotSpots());
 
     Parse.Promise
         .when(promises)
@@ -38,6 +39,13 @@ Parse.Cloud.define("clearDB", function(request, response) {
             .then(function(reflections) {
                 return Parse.Object.destroyAll(reflections);
             });
+    }
+
+    function deleteHotSpots() {
+        return hotSpotBucketsQuery.find()
+            .then(function (hotSpotBuckets) {
+                return Parse.Object.destroyAll(hotSpotBuckets);
+            })
     }
 
 });
@@ -71,6 +79,7 @@ Parse.Cloud.afterSave(Parse.User, function(request) {
         'Stress',
         'Systems'
     ]);
+    bodyBucket.setACL(new Parse.ACL(request.object))
 
     var careerBucket = new HotSpotBucket();
     careerBucket.set('name', 'Career');
@@ -85,6 +94,7 @@ Parse.Cloud.afterSave(Parse.User, function(request) {
         'Roles',
         'Tasks'
     ]);
+    careerBucket.setACL(new Parse.ACL(request.object))
 
     var emotionsBucket = new HotSpotBucket();
     emotionsBucket.set('name', 'Emotions');
@@ -95,6 +105,7 @@ Parse.Cloud.afterSave(Parse.User, function(request) {
         'Empathy',
         'Passion'
     ]);
+    emotionsBucket.setACL(new Parse.ACL(request.object))
 
     var financialBucket = new HotSpotBucket();
     financialBucket.set('name', 'Financial');
@@ -113,6 +124,7 @@ Parse.Cloud.afterSave(Parse.User, function(request) {
         'Spending',
         'Taxes'
     ]);
+    financialBucket.setACL(new Parse.ACL(request.object))
 
     var funBucket = new HotSpotBucket();
     funBucket.set('name', 'Fun');
@@ -124,6 +136,7 @@ Parse.Cloud.afterSave(Parse.User, function(request) {
         'Travel',
         'Vacations'
     ]);
+    funBucket.setACL(new Parse.ACL(request.object))
 
     var relationshipsBucket = new HotSpotBucket();
     relationshipsBucket.set('name', 'Relationships');
@@ -132,6 +145,7 @@ Parse.Cloud.afterSave(Parse.User, function(request) {
         'Work',
         'Other'
     ]);
+    relationshipsBucket.setACL(new Parse.ACL(request.object))
 
     mindBucket.save();
     bodyBucket.save();
@@ -143,7 +157,7 @@ Parse.Cloud.afterSave(Parse.User, function(request) {
 });
 
 /*
- * Function to get all Agile Results type entries (Daily Outcomes, Monday Visions, Weekly Reflections, etc...)
+ * Function to get all Agile Results entries of all types (Daily Outcomes, Monday Visions, Weekly Reflections, etc...)
  *
  * Returns an array sorted by effectiveDate
  */
@@ -284,7 +298,6 @@ Parse.Cloud.define("getRelatedEntriesForOutcome", function(request, response) {
                 if (typeof lastWeeksWeeklyOutcome !== "undefined") {
                     entries.push(lastWeeksWeeklyOutcome);
                 }
-
 
                 response.success(entries);
             }, function (error) {
