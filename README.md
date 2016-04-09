@@ -1,5 +1,9 @@
 # ExtremeResults-CloudCode
-Cloud Code for ExtremeResults (XR)
+This code is not used anymore since Parse shut down their services. All server side code is now in the new ExtremeResults-Server project:
+https://github.com/bjaanes/ExtremeResults-Server
+
+
+## Cloud Code for ExtremeResults (XR)
 
 This is the Cloud Code (Parse Technology) used in clients like:
 https://github.com/bjaanes/ExtremeResults-WebApp
